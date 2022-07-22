@@ -13,6 +13,7 @@
 #include "gl_cvars.h"
 #include "gl_debug.h"
 #include "gl_studio.h"
+#include "features/render_features.h"
 
 CBasePostEffects	post;
 
@@ -49,12 +50,12 @@ void CBasePostEffects::InitializeShaders()
 
 	// prepare sunshafts
 	genSunShafts = GL_FindShader("postfx/genshafts", "postfx/generic", "postfx/genshafts");
-drawSunShafts = GL_FindShader("postfx/drawshafts", "postfx/generic", "postfx/drawshafts");
+  drawSunShafts = GL_FindShader("postfx/drawshafts", "postfx/generic", "postfx/drawshafts");
 
-	// render motion blur
-	motionBlurShader = GL_FindShader("postfx/motionblur", "postfx/generic", "postfx/motionblur");
-	velocityShader = GL_FindShader("postfx/vertex", "postfx/vertex", "postfx/vertex");
-	studioVelocityShader = GL_FindShader("forward/velocity_studio", "forward/velocity_studio", "postfx/vertex");
+  // render motion blur
+  motionBlurShader = GL_FindShader("postfx/motionblur", "postfx/generic", "postfx/motionblur");
+  velocityShader = GL_FindShader("postfx/vertex", "postfx/vertex", "postfx/vertex");
+  studioVelocityShader = GL_FindShader("forward/velocity_studio", "forward/velocity_studio", "postfx/vertex");
 	
 	// tonemapping
 	if (CVAR_TO_BOOL(r_show_luminance)) {
@@ -127,28 +128,17 @@ void CBasePostEffects :: InitTargetColor( int slot )
 	target_rgb[slot] = CREATE_TEXTURE(va( "*target%i", slot ), TARGET_SIZE, TARGET_SIZE, NULL, tex_flags);
 }
 
-extern CStudioModelRenderer g_StudioRenderer;
-extern void R_SetupViewCache( const ref_viewpass_t *rvp );
-void DrawVelocityMap();
-void CBasePostEffects :: RequestVelocityMap( void )
-{
-	DrawVelocityMap();
-}
-
 void CBasePostEffects :: RequestScreenColor( void )
 {
 	bool hdr_rendering = CVAR_TO_BOOL(gl_hdr);
 	GL_Bind(GL_TEXTURE0, tr.screen_color);
-	if (hdr_rendering)
-	{
-		pglBindFramebuffer(GL_DRAW_FRAMEBUFFER, tr.screencopy_fbo->id);
+  if (hdr_rendering) {
+    pglBindFramebuffer(GL_DRAW_FRAMEBUFFER, tr.screencopy_fbo->id);
 		pglBlitFramebuffer(0, 0, glState.width, glState.height, 0, 0, glState.width, glState.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, glState.frameBuffer);
-	}
-	else
-	{
-		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, glState.width, glState.height);
-	}
+  } else {
+    pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, glState.width, glState.height);
+  }
 }
 
 void CBasePostEffects :: RequestScreenDepth( void )
@@ -339,11 +329,12 @@ void CBasePostEffects::InitAutoExposure()
 
 void CBasePostEffects::InitMotionBlur()
 {
-	FREE_TEXTURE(motion_blur_texture);
-	GL_FreeDrawbuffer(motion_blur_fbo);
-	motion_blur_fbo = GL_AllocDrawbuffer("*motion_blur_fbo", glState.width, glState.height, 0);
-	motion_blur_texture = CREATE_TEXTURE( "*motion_blur", glState.width, glState.height, NULL, TF_COLORBUFFER | TF_SCREEN | TF_NOCOMPARE ); 
-	GL_AttachColorTextureToFBO(motion_blur_fbo, motion_blur_texture, 0, 0, 0);
+  render::features::velocityMapRenderFeature.init();
+  FREE_TEXTURE(motion_blur_texture);
+  GL_FreeDrawbuffer(motion_blur_fbo);
+  motion_blur_fbo = GL_AllocDrawbuffer("*motion_blur_fbo", glState.width, glState.height, 0);
+  motion_blur_texture = CREATE_TEXTURE("*motion_blur", glState.width, glState.height, NULL, TF_COLORBUFFER | TF_SCREEN | TF_NOCOMPARE);
+  GL_AttachColorTextureToFBO(motion_blur_fbo, motion_blur_texture, 0, 0, 0);
 	GL_CheckFBOStatus(motion_blur_fbo);
 
 	pglBindFramebuffer(GL_DRAW_FRAMEBUFFER, post.motion_blur_fbo->id);
@@ -669,23 +660,20 @@ void V_RenderPostEffect( word hProgram )
 			u->SetValue( tr.fogColor[0], tr.fogColor[1], tr.fogColor[2], tr.fogDensity );
 			break;
 		case UT_TEXVELOCITY:
-			// u->SetValue( tr.skyboxTextures );
-			u->SetValue( post.motion_blur_texture );
-			break;
-		case UT_PREVMODELVIEWPROJECT:
-			u->SetValue( post.prev_model_view_project );
-			break;
-		case UT_MODELVIEWPROJECT:
-			u->SetValue( RI->glstate.modelviewProjectionMatrix );
-			break;
-		default:
-			ALERT( at_error, "%s: unhandled uniform %s\n", RI->currentshader->name, u->name );
-			break;
-		}
-	}
+      // u->SetValue( tr.skyboxTextures );
+      u->SetValue(render::features::velocityMapRenderFeature.texture);
+      break;
+    case UT_PREVMODELVIEWPROJECT:
+      u->SetValue(post.prev_model_view_project);
+      break;
+    default:
+      ALERT(at_error, "%s: unhandled uniform %s\n", RI->currentshader->name, u->name);
+      break;
+    }
+  }
 
-	// render a fullscreen quad
-	RenderFSQ( glState.width, glState.height );
+  // render a fullscreen quad
+  RenderFSQ(glState.width, glState.height);
 }
 
 void RenderBlur( float blurX, float blurY )

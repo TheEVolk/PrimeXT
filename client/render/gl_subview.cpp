@@ -22,6 +22,7 @@ GNU General Public License for more details.
 #include "gl_occlusion.h"
 #include "gl_cvars.h"
 #include "gl_studio.h"
+#include "gl_pipeline.h"
 
 #define MIRROR_PLANE_EPSILON		0.1f
 
@@ -692,8 +693,9 @@ void R_RenderSubview()
 		// reset the subinfo
 		surf->info->subtexture[glState.stack_position-1] = 0;
 		RI->reject_face = surf;
-		R_RenderScene( &rvp, (RefParams)rvp.flags );
-		RI->reject_face = NULL;
+    render::render_context_t context { &rvp, static_cast<RefParams>(rvp.flags) };
+    render::pipeline->renderScene(&context);
+    RI->reject_face = NULL;
 
 		if (!GL_Support(R_FRAMEBUFFER_OBJECT)) 
 		{

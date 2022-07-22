@@ -27,8 +27,12 @@ GNU General Public License for more details.
 #include "gl_cvars.h"
 #include "vertex_fmt.h"
 
+#include "gl_postprocess.h"
+
 static gl_world_t	worlddata;
 gl_world_t *world = &worlddata;
+
+extern CBasePostEffects post;
 
 /*
 ==================
@@ -3139,10 +3143,11 @@ void R_SetSurfaceUniforms( word hProgram, msurface_t *surface, bool force )
 		case UT_LIGHTNUMS1:
 			u->SetValue( (float)e->lights[4], (float)e->lights[5], (float)e->lights[6], (float)e->lights[7] );
 			break;
-		default:
-			ALERT( at_error, "%s: unhandled uniform %s\n", RI->currentshader->name, u->name );
-			break;
-		}
+      USE_SHADER_UNIFORM(UT_PREVMODELVIEWPROJECT, post.prev_model_view_project);
+    default:
+      ALERT(at_error, "%s: unhandled uniform %s\n", RI->currentshader->name, u->name);
+      break;
+    }
 	}
 }
 

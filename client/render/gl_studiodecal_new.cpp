@@ -1735,8 +1735,8 @@ void CStudioModelRenderer :: SetDecalUniforms( studiodecal_t *pDecal )
 			height = RENDER_GET_PARM( PARM_TEX_HEIGHT, pDecal->texinfo->gl_heightmap_id );
 			u->SetValue( (float)width, (float)height, pDecal->texinfo->matdesc->reliefScale, cv_shadow_offset->value );
 			break;
-		default:
-			ALERT( at_error, "Unhandled uniform %s\n", u->name );
+    default:
+      ALERT( at_error, "Unhandled uniform %s\n", u->name );
 			break;
 		}
 	}

@@ -28,6 +28,8 @@ GNU General Public License for more details.
 #include "gl_viewport.h"
 #include "gl_unit_cube.h"
 
+#include "gl_pipeline.h"
+
 static word g_shaderFilterSpecularIBL;
 
 void R_InitCubemaps()
@@ -605,12 +607,12 @@ static void GL_FilterCubemapSpecularIBL(mcubemap_t *cubemap)
 
 static void GL_RenderCubemapSide(mcubemap_t *cubemap, int side)
 {
-	ref_viewpass_t rvp;
-	GL_DebugGroupPush(__FUNCTION__);
-	cubemap->framebuffer.Bind(cubemap->texture, side);
+  GlDebugScope _gs(__FUNCTION__);
+  ref_viewpass_t rvp;
+  cubemap->framebuffer.Bind(cubemap->texture, side);
 	GL_SetupCubemapSideView(cubemap, rvp, side);
-	R_RenderScene(&rvp, static_cast<RefParams>(rvp.flags));
-	GL_DebugGroupPop();
+  render::render_context_t context { &rvp, static_cast<RefParams>(rvp.flags) };
+  render::pipeline->renderScene(&context);
 }
 
 static void GL_RenderCubemap(mcubemap_t *cubemap)

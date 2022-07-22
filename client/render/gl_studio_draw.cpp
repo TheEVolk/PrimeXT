@@ -3676,13 +3676,17 @@ void CStudioModelRenderer :: DrawSingleMesh( CSolidEntry *entry, bool force )
 		case UT_LIGHTTHRESHOLD:
 			u->SetValue( tr.light_threshold );
 			break;
-		default:
-			ALERT( at_error, "%s: unhandled uniform %s\n", RI->currentshader->name, u->name );
-			break;
-		}
-	}
+      USE_SHADER_UNIFORM(UT_PREVMODELVIEWPROJECT, post.prev_model_view_project);
+      USE_SHADER_UNIFORM(UT_PREVBONESARRAY, &inst->m_glprevbones[0][0], num_bones * 3);
+    default:
+      ALERT(at_error, "%s: unhandled uniform %s\n", RI->currentshader->name, u->name);
+      break;
+    }
 
-	DrawMeshFromBuffer( pMesh );
+    memcpy(inst->m_glprevbones, weapon_model ? inst->m_glweaponbones : inst->m_glstudiobones, sizeof(Vector4D) * num_bones * 3);
+  }
+
+  DrawMeshFromBuffer(pMesh);
 }
 
 void CStudioModelRenderer :: RenderRawStudioList( void )

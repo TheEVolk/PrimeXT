@@ -126,6 +126,11 @@ inline RefParams operator|(RefParams a, RefParams b)
 	return static_cast<RefParams>(static_cast<int>(a) | static_cast<int>(b));
 }
 
+inline RefParams& operator|=(RefParams& a, RefParams b)
+{
+  return a = a | b;
+}
+
 // RI->view.changed
 #define RC_ORIGIN_CHANGED	BIT( 0 )	// origin is changed from the previous frame
 #define RC_ANGLES_CHANGED	BIT( 1 )	// angles is changed from the previous frame

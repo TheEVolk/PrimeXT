@@ -28,6 +28,7 @@ GNU General Public License for more details.
 #include "gl_debug.h"
 #include "gl_unit_cube.h"
 #include "r_weather.h"
+#include "gl_pipeline.h"
 
 #define DEFAULT_SMOOTHNESS	0.0f
 #define FILTER_SIZE		2
@@ -1069,6 +1070,9 @@ void GL_InitMultisampleScreenFBO()
 	GL_AttachColorTextureToFBO(tr.screen_temp_fbo_msaa, tr.screen_temp_fbo_msaa_texture_color, 0);
 	GL_AttachDepthTextureToFBO(tr.screen_temp_fbo_msaa, tr.screen_temp_fbo_msaa_texture_depth);
 	GL_CheckFBOStatus(tr.screen_temp_fbo_msaa);
+
+  // render::pipeline->addMrtTarget("color", tr.screen_temp_fbo_msaa_texture_color);
+  render::pipeline->addMrtBuffer(tr.screen_temp_fbo_msaa);
 }
 
 void GL_InitTempScreenFBO()
@@ -1110,8 +1114,8 @@ void GL_InitTempScreenFBO()
 		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, tr.screen_temp_fbo_texture_color, i + 1);
 	}
 
-	pglDrawBuffersARB(ARRAYSIZE(MRTBuffers), MRTBuffers);
-	GL_InitMultisampleScreenFBO();
+  pglDrawBuffersARB(ARRAYSIZE(MRTBuffers), MRTBuffers);
+  GL_InitMultisampleScreenFBO();
 }
 
 void GL_VidInitTempScreenFBO(void)

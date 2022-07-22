@@ -22,3 +22,15 @@ void DrawTangentSpaces();
 void DrawWireFrame();
 void DrawViewLeaf();
 void DrawCubeMaps();
+
+class GlDebugScope
+{
+public:
+  inline GlDebugScope(const char *markerName) {
+    GL_DebugGroupPush(markerName);
+  }
+
+  inline ~GlDebugScope() {
+    GL_DebugGroupPop();
+  }
+};

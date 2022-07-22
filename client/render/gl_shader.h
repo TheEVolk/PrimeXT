@@ -46,11 +46,11 @@ GNU General Public License for more details.
 			u->SetValue( __VA_ARGS__ ); \
 			break;
 
-#define END_SHADER_UNIFORMS() default: \
-			ALERT( at_error, "%s: unhandled uniform %s\n", RI->currentshader->name, u->name ); \
-			break; \
-		} \
-	}
+#define END_SHADER_UNIFORMS() \
+  default:                    \
+    break;                    \
+    }                         \
+    }
 
 enum
 {

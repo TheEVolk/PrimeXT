@@ -57,7 +57,7 @@ list(APPEND CLDLL_SOURCES
 )
 
 # render source files
-file(GLOB RENDER_SOURCES "render/*.cpp")
+file(GLOB RENDER_SOURCES "render/*.cpp" "render/features/*.cpp")
 
 # ImGui source files
 if(NOT ENABLE_VGUI_COMPATIBILITY)

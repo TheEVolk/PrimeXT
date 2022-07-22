@@ -31,6 +31,7 @@ GNU General Public License for more details.
 #include "tri.h"
 
 #include "gl_postprocess.h"
+#include "gl_pipeline.h"
 
 ref_globals_t	tr;
 ref_instance_t	*RI = NULL;
@@ -780,21 +781,21 @@ void R_Clear( int bitMask )
 	// NOTE: mask should be enabled to properly clear buffer
 	GL_DepthMask( GL_TRUE );
 
-	if( FBitSet( RI->params, RP_DRAW_OVERVIEW ))
-		pglClearColor( 0.0f, 1.0f, 0.0f, 1.0f ); // green background (Valve rules)
-	else pglClearColor( 0.5f, 0.5f, 0.5f, 1.0f );
+  /*if( FBitSet( RI->params, RP_DRAW_OVERVIEW ))
+    pglClearColor( 0.0f, 1.0f, 0.0f, 1.0f ); // green background (Valve rules)
+  else pglClearColor( 0.5f, 0.5f, 0.5f, 1.0f );*/
 
-	// force to clearing screen to avoid ugly blur
-	if( tr.fClearScreen && !CVAR_TO_BOOL( r_clear ))
-		bits |= GL_COLOR_BUFFER_BIT;
+  // force to clearing screen to avoid ugly blur
+  if (tr.fClearScreen && !CVAR_TO_BOOL(r_clear))
+    bits |= GL_COLOR_BUFFER_BIT;
 
-	bits &= bitMask;
+  bits &= bitMask;
 
-	pglClear( bits );
-	pglDepthFunc( GL_LEQUAL );
-	GL_Cull( GL_FRONT );
+  pglClear(bits);
+  pglDepthFunc(GL_LEQUAL);
+  GL_Cull(GL_FRONT);
 
-	// change ordering for overview
+  // change ordering for overview
 	if( FBitSet( RI->params, RP_DRAW_OVERVIEW ))
 	{
 		gldepthmin = 1.0f;
@@ -981,61 +982,6 @@ void R_RenderVelocityMap()
 
 /*
 ===============
-R_RenderScene
-===============
-*/
-void R_RenderScene( const ref_viewpass_t *rvp, RefParams params )
-{
-	int	err;
-	
-	// now we know about pass specific
-	RI->params = params;
-
-	// frametime is valid only for normal pass
-	if( RP_NORMALPASS( ))
-		tr.frametime = tr.saved_frametime;
-	else tr.frametime = 0.0;
-
-	GL_DebugGroupPush(__FUNCTION__);
-	R_BuildViewPassHierarchy();
-	R_SetupViewCache( rvp );
-
-	R_CheckSkyPortal(tr.sky_camera);
-	R_RenderSubview(); // prepare subview frames
-	R_RenderShadowmaps(); // draw all the shadowmaps
-
-	R_SetupGLstate();
-	R_Clear( ~0 );
-
-	R_DrawSkyBox();
-	R_RenderSolidBrushList();
-	R_RenderSolidStudioList();
-	HUD_DrawNormalTriangles();
-	R_RenderSurfOcclusionList();
-	R_DrawParticles( false );
-	R_RenderDebugStudioList( false );
-
-	R_RenderVelocityMap();
-
-	GL_CheckForErrors();
-
-	// restore right depthrange here
-	GL_DepthRange( gldepthmin, gldepthmax );
-
-	R_RenderTransList();
-	R_DrawParticles( true );
-	R_DrawWeather();
-	HUD_DrawTransparentTriangles();
-
-	GL_CheckForErrors();
-
-	GL_BindShader( NULL );
-	R_ResetGLstate();
-	GL_DebugGroupPop();
-}
-
-/*
-===============
 R_RenderDeferredScene
 ===============
 */
@@ -1088,66 +1034,8 @@ the client (e.g. playersetup preview)
 */
 int HUD_RenderFrame( const struct ref_viewpass_s *rvp )
 {
-	RefParams refParams = RP_NONE;
-	ref_viewpass_t defVP = *rvp;
-	bool hdr_rendering = CVAR_TO_BOOL(gl_hdr);
-
-	// setup some renderer flags
-	if( !FBitSet( rvp->flags, RF_DRAW_CUBEMAP ))
-	{
-		if ( FBitSet( rvp->flags, RF_DRAW_OVERVIEW ))
-			SetBits( refParams, RP_DRAW_OVERVIEW );
-
-		if (CL_IsThirdPerson())
-			SetBits( refParams, RP_THIRDPERSON );
-	}
-	else
-	{
-		if( world->build_default_cubemap )
-			SetBits( refParams, RP_SKYVIEW );
-		else SetBits( refParams, RP_ENVVIEW );
-		tr.fClearScreen = true;
-
-		// now all uber-shaders are invalidate
-		// and possible need for recompile
-		tr.params_changed = true;
-		tr.glsl_valid_sequence++;
-	}
-
-	if( FBitSet( rvp->flags, RF_DRAW_WORLD ))
-		SetBits( refParams, RP_DRAW_WORLD );
-
-	GL_DebugGroupPush(__FUNCTION__);
-	if (!GL_BackendStartFrame(&defVP, refParams))
-	{
-		GL_DebugGroupPop();
-		return 0;
-	}
-
-	if (hdr_rendering)
-		GL_BindDrawbuffer(tr.screen_temp_fbo_msaa);
-
-	if( CVAR_TO_BOOL( cv_deferred ))
-	{
-		if( !CVAR_TO_BOOL( cv_deferred_full ))
-		{
-			defVP.viewport[2] = glState.defWidth;
-			defVP.viewport[3] = glState.defHeight;
-			R_RenderDeferredScene( &defVP, RP_DEFERREDLIGHT );
-			defVP = *rvp;
-		}
-		R_RenderDeferredScene( &defVP, RP_DEFERREDSCENE );
-	}
-	else
-	{
-		R_RenderScene( &defVP, refParams );
-	}
-
-	defVP = *rvp;
-
-	GL_BackendEndFrame( &defVP, refParams );
-	GL_DebugGroupPop();
-	return 1;
+  render::render_context_t context { (ref_viewpass_t*)rvp, static_cast<RefParams>(0) };
+  return render::pipeline->renderFrame(&context);
 }
 
 void HUD_ProcessModelData( model_t *mod, qboolean create, const byte *buffer )

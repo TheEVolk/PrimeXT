@@ -9,6 +9,10 @@
 #include "gl_shader.h"
 #include "gl_cvars.h"
 #include "gl_debug.h"
+#include "gl_pipeline.h"
+#include "gl_postprocess.h"
+
+extern CBasePostEffects post;
 
 #define MAX_CLIP_VERTS	128	// skybox clip vertices
 
@@ -311,7 +315,8 @@ void GL_DrawSkySide( word hProgram, int skyside )
 		case UT_ZFAR:
 			u->SetValue( RI->view.farClip );
 			break;
-		default:
+      USE_SHADER_UNIFORM(UT_PREVMODELVIEWPROJECT, post.prev_model_view_project);
+    default:
 			ALERT( at_error, "%s: unhandled uniform %s\n", RI->currentshader->name, u->name );
 			break;
 		}
@@ -363,17 +368,15 @@ void R_DrawSkyBox()
 			hSkyShader = tr.skyboxEnv[type];
 		}
 	}
-
-	for (int i = 0; i < 6; i++)
-	{
-		if( RI->view.skyMins[0][i] >= RI->view.skyMaxs[0][i] || RI->view.skyMins[1][i] >= RI->view.skyMaxs[1][i] )
-			continue;
+  for (int i = 0; i < 6; i++) {
+    if (RI->view.skyMins[0][i] >= RI->view.skyMaxs[0][i] || RI->view.skyMins[1][i] >= RI->view.skyMaxs[1][i])
+      continue;
 
 		GL_DrawSkySide( hSkyShader, i );
-	}
+  }
 
-	GL_ClipPlane( true );
-	GL_DepthMask( GL_TRUE );
+  GL_ClipPlane(true);
+  GL_DepthMask( GL_TRUE );
 	GL_DebugGroupPop();
 }
 
@@ -418,9 +421,10 @@ void R_DrawSkyPortal(cl_entity_t *skyPortal)
 	}
 
 	r_stats.c_sky_passes++;
-	R_RenderScene(&rvp, (RefParams)rvp.flags);
-	R_PopRefState();
-	GL_DebugGroupPop();
+  render::render_context_t context { &rvp, static_cast<RefParams>(rvp.flags) };
+  render::pipeline->renderScene(&context);
+  R_PopRefState();
+  GL_DebugGroupPop();
 }
 
 void R_CheckSkyPortal(cl_entity_t *skyPortal)

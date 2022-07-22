@@ -109,11 +109,9 @@ void uniform_t :: SetValue( const void *pdata, int count )
 	// set texture unit
 	if( FBitSet( flags, UFL_TEXTURE_UNIT ) && unit >= 0 )
 	{
-		GL_Bind( unit, check->iValue[0] );
-	}
-	else if( size > 1 )
-	{
-		// handle arrays
+    GL_Bind(unit, check->iValue[0]);
+  } else if (size > 1) {
+    // handle arrays
 		if( count == -1 )
 			count = size;
 
@@ -141,10 +139,8 @@ void uniform_t :: SetValue( const void *pdata, int count )
 			pglUniformMatrix4fvARB( location, count, GL_FALSE, (const float *)pdata );
 			break;
 		}
-	}
-	else
-	{
-		int testSize = GetSizeInBytes();
+  } else {
+    int testSize = GetSizeInBytes();
 
 		// some values could be cached
 		if( testSize <= 16 && !memcmp( &cache, check, testSize ))
@@ -211,7 +207,7 @@ void uniform_t :: SetValue( const void *pdata, int count )
 			pglUniformMatrix4fvARB( location, 1, GL_FALSE, (const float *)pdata );
 			break;
 		}
-	}
+  }
 }
 
 // all known engine uniforms
@@ -749,8 +745,11 @@ static bool GL_ProcessShader( glsl_program_t *program, const char *filename, GLe
 	outputFile->Printf("#ifndef MAXDYNLIGHTS\n#define MAXDYNLIGHTS %i\n#endif\n", (int)cv_deferred_maxlights->value);
 	outputFile->Printf("#ifndef GRASS_ANIM_DIST\n#define GRASS_ANIM_DIST %f\n#endif\n", GRASS_ANIM_DIST);
 
-	int headerLines = GL_GetFileLineCount(outputFile) - 1;
-	GL_ParseFile(program, filename, 0, &inputFile, outputFile, nullptr);
+  outputFile->Printf("#define MRT_COLOR 0\n");
+  outputFile->Printf("#define MRT_VELOCITY 1\n");
+
+  int headerLines = GL_GetFileLineCount(outputFile) - 1;
+  GL_ParseFile(program, filename, 0, &inputFile, outputFile, nullptr);
  	outputFile->Write("", 1); // terminator
 	GL_RebaseHeadersHierarchy(program, program->sourceUnits.back(), headerLines);
 
