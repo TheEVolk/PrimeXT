@@ -69,9 +69,9 @@ bool CRenderPipeline::renderScene(render_context_t* context)
   R_BuildViewPassHierarchy();
   R_SetupViewCache(context->rvp);
 
-  // R_CheckSkyPortal(tr.sky_camera);
-  // R_RenderSubview(); // prepare subview frames
-  // R_RenderShadowmaps(); // draw all the shadowmaps
+  R_CheckSkyPortal(tr.sky_camera);
+  R_RenderSubview(); // prepare subview frames
+  R_RenderShadowmaps(); // draw all the shadowmaps
 
   R_SetupGLstate();
   R_Clear(~0);
@@ -87,17 +87,35 @@ bool CRenderPipeline::renderScene(render_context_t* context)
   GL_CheckForErrors();
 
   // restore right depthrange here
-  GL_DepthRange(gldepthmin, gldepthmax);
+  // GL_DepthRange(gldepthmin, gldepthmax);
+
+  pglDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
   R_RenderTransList();
+
   R_DrawParticles(true);
   R_DrawWeather();
   HUD_DrawTransparentTriangles();
+  GLenum buffers[11] = {
+    GL_COLOR_ATTACHMENT0_EXT,
+    GL_COLOR_ATTACHMENT1_EXT,
+    GL_COLOR_ATTACHMENT2_EXT,
+    GL_COLOR_ATTACHMENT3_EXT,
+    GL_COLOR_ATTACHMENT4_EXT,
+    GL_COLOR_ATTACHMENT5_EXT,
+    GL_COLOR_ATTACHMENT6_EXT,
+    GL_COLOR_ATTACHMENT7_EXT,
+    GL_COLOR_ATTACHMENT8_EXT,
+    GL_COLOR_ATTACHMENT9_EXT,
+    GL_COLOR_ATTACHMENT10_EXT
+  };
+  pglDrawBuffersARB(_mrtTargetsSize + 1, buffers);
 
   GL_CheckForErrors();
 
-  GL_BindShader(NULL);
   R_ResetGLstate();
+
+  GL_BindShader(NULL);
 
   return true;
 }
@@ -111,11 +129,6 @@ int CRenderPipeline::renderFrame(render_context_t* context)
   }
 
   return this->processConveyor(context);
-  // features::mainRenderFeature.preFrameHandler(context);
-  // startFrame(context);
-  // renderScene(context);
-  // endFrame(context);
-
   return 1;
 }
 
@@ -138,37 +151,14 @@ void CRenderPipeline::addConveyorItems(int* index, ConveyorItemIntent intent)
 
 void CRenderPipeline::buildMrt()
 {
-  printf("Start build...\n");
-  GLenum buffers[11] = {
-    GL_COLOR_ATTACHMENT0_EXT,
-    GL_COLOR_ATTACHMENT1_EXT,
-    GL_COLOR_ATTACHMENT2_EXT,
-    GL_COLOR_ATTACHMENT3_EXT,
-    GL_COLOR_ATTACHMENT4_EXT,
-    GL_COLOR_ATTACHMENT5_EXT,
-    GL_COLOR_ATTACHMENT6_EXT,
-    GL_COLOR_ATTACHMENT7_EXT,
-    GL_COLOR_ATTACHMENT8_EXT,
-    GL_COLOR_ATTACHMENT9_EXT,
-    GL_COLOR_ATTACHMENT10_EXT
-  };
-
   // MSAA
-  for (int i = 0; i < this->_mrtTargets.size(); i++) {
+  for (int i = 0; i < _mrtTargetsSize; i++) {
     GL_AttachColorTextureToFBO(tr.screen_temp_fbo_msaa, _mrtTargets[i].msaaTexture, i + 1);
-  }
-
-  pglDrawBuffersARB(_mrtTargets.size() + 1, buffers);
-  GL_CheckFBOStatus(tr.screen_temp_fbo_msaa);
-
-  // STANDARD
-  for (int i = 0; i < this->_mrtTargets.size(); i++) {
     GL_AttachColorTextureToFBO(tr.screen_temp_fbo, _mrtTargets[i].texture, i + 1);
   }
 
-  pglDrawBuffersARB(_mrtTargets.size() + 1, buffers);
+  GL_CheckFBOStatus(tr.screen_temp_fbo_msaa);
   GL_CheckFBOStatus(tr.screen_temp_fbo);
-
   _needBuildMrt = false;
 }
 
@@ -555,27 +545,34 @@ bool CRenderPipeline::endFrame(render_context_t* context)
   return true;
 }
 
-void CRenderPipeline::addMrtTarget(const char* name, int texture, int flags = 0)
+void CRenderPipeline::SetMrtTarget(const char* name, int texture, MrtFlags flags = MrtFlags::MRT_NONE)
 {
+  int index = -1;
+  for (int i = 0; i < _mrtTargetsSize; i++) {
+    printf("Check: %s %s\n", name, _mrtTargets[i].name);
+    if (!Q_strcmp(name, _mrtTargets[i].name)) {
+      index = i;
+    }
+  }
+
+  if (index == -1) {
+    index = _mrtTargetsSize;
+    _mrtTargetsSize++;
+  }
+
   _needBuildMrt = true;
-  if (flags & TF_MULTISAMPLE) {
-    _mrtTargets.push_back({ name, texture, 0 });
+  if (false) {
+    _mrtTargets[index] = (MrtTarget) { name, texture, 0, flags };
     return;
+  }
+
+  if (index != _mrtTargetsSize - 1) {
+    FREE_TEXTURE(_mrtTargets[index].msaaTexture);
   }
 
   char msaaName[32];
   sprintf(msaaName, "*%s_msaa", name);
-  int msaaTexture = CREATE_TEXTURE(msaaName, glState.width, glState.height, NULL, flags ^ TF_MULTISAMPLE);
-  _mrtTargets.push_back({ name, msaaTexture, texture });
-
-  /*glCopyImageSubData(tex1, GL_TEXTURE_2D, 0, 0, 0, 0,
-      tex2, GL_TEXTURE_2D, 0, 0, 0, 0,
-      width, height, 1);*/
-}
-
-void CRenderPipeline::addMrtBuffer(gl_drawbuffer_t* buffer)
-{
-  _mrtBuffers.push_back(buffer);
-  _needBuildMrt = true;
+  int msaaTexture = CREATE_TEXTURE(msaaName, glState.width, glState.height, NULL, TF_MULTISAMPLE);
+  _mrtTargets[index] = (MrtTarget) { name, msaaTexture, texture, flags };
 }
 } // namespace render

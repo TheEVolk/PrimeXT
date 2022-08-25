@@ -898,33 +898,31 @@ void R_RenderTransList( void )
 	// sorting by distance
 	RI->frame.trans_list.Sort( R_SortTransMeshes );
 
-	for( int i = 0; i < RI->frame.trans_list.Count(); i++ )
-	{
-		CTransEntry *entry = &RI->frame.trans_list[i];
+  for (int i = 0; i < RI->frame.trans_list.Count(); i++) {
+    CTransEntry* entry = &RI->frame.trans_list[i];
 
-		switch( entry->m_bDrawType )
-		{
-		case DRAWTYPE_SURFACE:
-			R_RenderTransSurface( entry );
-			break;
-		case DRAWTYPE_MESH:
-			R_RenderTransMesh( entry );
-			break;
-		case DRAWTYPE_QUAD:
-			R_RenderQuadPrimitive( entry );
-			break;
-		}
-	}
+    switch (entry->m_bDrawType) {
+    case DRAWTYPE_SURFACE:
+      R_RenderTransSurface(entry);
+      break;
+    case DRAWTYPE_MESH:
+      R_RenderTransMesh(entry);
+      break;
+    case DRAWTYPE_QUAD:
+      R_RenderQuadPrimitive(entry);
+      break;
+    }
+  }
 
-	R_RenderDecalsTransList( DRAWLIST_SOLID );
+  R_RenderDecalsTransList(DRAWLIST_SOLID);
 
-	R_RenderDynLightList( false );
-	R_RenderLightForTransMeshes();
+  R_RenderDynLightList(false);
+  R_RenderLightForTransMeshes();
 
-	R_RenderDecalsTransList( DRAWLIST_TRANS );
+  R_RenderDecalsTransList(DRAWLIST_TRANS);
 
-	if( GL_Support( R_SEAMLESS_CUBEMAP ))
-		pglDisable( GL_TEXTURE_CUBE_MAP_SEAMLESS );
+  if (GL_Support(R_SEAMLESS_CUBEMAP))
+    pglDisable( GL_TEXTURE_CUBE_MAP_SEAMLESS );
 	GL_DepthRange( gldepthmin, gldepthmax );
 	GL_CleanupDrawState();
 	GL_ClipPlane( true );

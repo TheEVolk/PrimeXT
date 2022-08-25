@@ -1069,10 +1069,7 @@ void GL_InitMultisampleScreenFBO()
 
 	GL_AttachColorTextureToFBO(tr.screen_temp_fbo_msaa, tr.screen_temp_fbo_msaa_texture_color, 0);
 	GL_AttachDepthTextureToFBO(tr.screen_temp_fbo_msaa, tr.screen_temp_fbo_msaa_texture_depth);
-	GL_CheckFBOStatus(tr.screen_temp_fbo_msaa);
-
-  // render::pipeline->addMrtTarget("color", tr.screen_temp_fbo_msaa_texture_color);
-  render::pipeline->addMrtBuffer(tr.screen_temp_fbo_msaa);
+  GL_CheckFBOStatus(tr.screen_temp_fbo_msaa);
 }
 
 void GL_InitTempScreenFBO()

@@ -80,8 +80,8 @@ void GL_PrintStats(int params)
 		R_Speeds_Printf("%3i mirror faces\n%3i tess verts\n", RI->frame.num_subview_faces, RI->frame.primverts.Count());
 		break;
 	case 2:
-		R_Speeds_Printf("DIP count %3i\nShader bind %3i\n", r_stats.num_flushes, r_stats.num_shader_binds);
-		R_Speeds_Printf("Frame total tris %3i\n", r_stats.c_total_tris);
+    R_Speeds_Printf("Draw Calls (DIP) count %3i\nShader bind %3i\n", r_stats.num_flushes, r_stats.num_shader_binds);
+    R_Speeds_Printf("Frame total tris %3i\n", r_stats.c_total_tris);
 		R_Speeds_Printf("Total GLSL shaders %3i", num_glsl_programs - 1);
 		break;
 	case 3:
